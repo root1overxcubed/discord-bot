@@ -11,6 +11,9 @@ const {CumBot} = require('./cumbot.js');
 const {reply} = require('./commands.js');
 const commands = require('./help');
 
+const express = require('express');
+const app = express();
+
 const bot = new CumBot({
 	intents: [Intents.FLAGS.GUILDS,
 				Intents.FLAGS.GUILD_INVITES,
@@ -69,3 +72,11 @@ bot.on('messageCreate', async message => {
 });
 
 bot.login(TOKEN);
+
+app.get('/', async (req,res) =>{
+  return res.send('Follow documentation ')
+})
+
+app.listen(8999, () => {
+
+})
