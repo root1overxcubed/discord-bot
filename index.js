@@ -6,108 +6,68 @@ const TOKEN = process.env.TOKEN
 const PUBLIC_KEY = process.env.PUBLIC_KEY || 'not set'
 const GUILD_ID = process.env.GUILD_ID 
 
+// Discord.js bot
+const {Intents, MessageEmbed} = require('discord.js');
+const pg = require('pg');
+const {CumBot} = require('./cumbot.js');
+const {reply} = require('./commands.js');
+const commands = require('./help');
 
-const axios = require('axios')
-const express = require('express');
-const { InteractionType, InteractionResponseType, verifyKeyMiddleware } = require('discord-interactions');
-
-
-const app = express();
-// app.use(bodyParser.json());
-
-const discord_api = axios.create({
-  baseURL: 'https://discord.com/api/',
-  timeout: 3000,
-  headers: {
-	"Access-Control-Allow-Origin": "*",
-	"Access-Control-Allow-Methods": "GET, POST, PUT, DELETE",
-	"Access-Control-Allow-Headers": "Authorization",
-	"Authorization": `Bot ${TOKEN}`
-  }
+const bot = new CumBot({
+	intents: [Intents.FLAGS.GUILDS,
+				Intents.FLAGS.GUILD_INVITES,
+				Intents.FLAGS.GUILD_MESSAGES,
+				Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
+				Intents.FLAGS.DIRECT_MESSAGES,
+				Intents.FLAGS.DIRECT_MESSAGE_REACTIONS]
+});
+						
+bot.on('ready', () => {
+	console.log(`Logged in as ${bot.user.tag}.`);
+    bot.user.setActivity('.cum', {type: 'LISTENING'});
 });
 
+bot.on('messageCreate', async message => {
+	if (reply(message)) return;
 
+	const channel_id = message.channel.id;
+  
+	if (message.content.startsWith('.cum')) {
+		let args = message.content.split(' ');
 
+		if (args[0] != '.cum') return;
 
-app.post('/interactions', verifyKeyMiddleware(PUBLIC_KEY), async (req, res) => {
-  const interaction = req.body;
+		if (args.length == 1) {
+			bot.cum(channel_id);
+			return;
+		}
 
-  if (interaction.type === InteractionType.APPLICATION_COMMAND) {
-    console.log(interaction.data.name)
-    if(interaction.data.name == 'yo'){
-      return res.send({
-        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: {
-          content: `Yo ${interaction.member.user.username}!`,
-        },
-      });
-    }
+		let command = args[1].toLowerCase();
+		switch (command) {
+			case 'count':
+				bot.count(channel_id);
+				break;
+			case 'last':
+				bot.last(channel_id);
+				break;
+			case 'next':
+				bot.next(channel_id);
+				break;
 
-    if(interaction.data.name == 'dm'){
-      // https://discord.com/developers/docs/resources/user#create-dm
-      let c = (await discord_api.post(`/users/@me/channels`,{
-        recipient_id: interaction.member.user.id
-      })).data
-      try{
-        // https://discord.com/developers/docs/resources/channel#create-message
-        let res = await discord_api.post(`/channels/${c.id}/messages`,{
-          content:'Yo! I got your slash command. I am not able to respond to DMs just slash commands.',
-        })
-        console.log(res.data)
-      }catch(e){
-        console.log(e)
-      }
-
-      return res.send({
-        // https://discord.com/developers/docs/interactions/receiving-and-responding#responding-to-an-interaction
-        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data:{
-          content:'👍'
-        }
-      });
-    }
-  }
-
+			case 'help':
+				let embed =  new MessageEmbed()
+					.setTitle('HELP MENU')
+					.setColor('GREEN')
+					.setFooter(`Requested by: ${message.member ? message.member.displayName : message.author.username}`, message.author.displayAvatarURL())
+					.setThumbnail(bot.user.displayAvatarURL());
+				embed
+					.setDescription(Object.keys(commands).map(command => `\`${command.padEnd(Object.keys(commands).reduce((a, b) => b.length > a.length ? b : a, '').length)}\` :: ${commands[command].description}`).join('\n'));
+				message.channel.send({embeds: [embed]});
+				break;
+		}
+	}
+	
+	bot.maybeRecord(message);
 });
 
-
-
-app.get('/register_commands', async (req,res) =>{
-  let slash_commands = [
-    {
-      "name": "yo",
-      "description": "replies with Yo!",
-      "options": []
-    },
-    {
-      "name": "dm",
-      "description": "sends user a DM",
-      "options": []
-    }
-  ]
-  try
-  {
-    // api docs - https://discord.com/developers/docs/interactions/application-commands#create-global-application-command
-    let discord_response = await discord_api.put(
-      `/applications/${APPLICATION_ID}/guilds/${GUILD_ID}/commands`,
-      slash_commands
-    )
-    console.log(discord_response.data)
-    return res.send('commands have been registered')
-  }catch(e){
-    console.error(e.code)
-    console.error(e.response?.data)
-    return res.send(`${e.code} error from discord`)
-  }
-})
-
-
-app.get('/', async (req,res) =>{
-  return res.send('Follow documentation ')
-})
-
-
-app.listen(8999, () => {
-
-})
-
+bot.login(TOKEN);
