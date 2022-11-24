@@ -7,7 +7,7 @@ function getRandomInt(max) {
   return Math.floor(Math.random() * max);
 }
 
-async function query(query_text) {
+async function query(query_text) {/*
 	const client = await new pg.Client({
 						connectionString: process.env.DATABASE_URL,
 						ssl: {
@@ -16,7 +16,8 @@ async function query(query_text) {
 					});
 	client.connect();
 	const result = await client.query(query_text);
-	return result;
+	return result;*/
+	return;
 }
 
 class CumBot extends Client{
@@ -34,7 +35,7 @@ class CumBot extends Client{
 	}
 
 	async getLastCumTime(channel_id){
-		try {
+		try {/*
 			const result = await query(
 				`SELECT last_cum_id 
 				FROM cum 
@@ -46,7 +47,7 @@ class CumBot extends Client{
 			let message = this.getTextChannel(channel_id).messages.cache.get(
 							result.rows.at(0).last_cum_id
 						);
-			return Math.trunc(message.createdAt.getTime()/1000);
+			return Math.trunc(message.createdAt.getTime()/1000);*/
 		} catch (err) {
 			console.error(err);
 			return 0;
@@ -57,7 +58,7 @@ class CumBot extends Client{
 		if (!message.content.toLowerCase().includes('cum')) {
 			return;
 		}
-		try {
+		try {/*
 			const count = (message.content.toLowerCase().match(/cum/g) || []).length;
 			const result = await query(`
 				INSERT INTO cum(channel_id, channel_name, cum_count, last_cum_id)
@@ -67,7 +68,7 @@ class CumBot extends Client{
 										FROM cum 
 										WHERE channel_id=${message.channel.id})+${count},
 						last_cum_id = ${message.id}
-			`)
+			`)*/
 		} catch (err) {
 			console.error(err);
 		}
