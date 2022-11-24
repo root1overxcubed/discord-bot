@@ -48,7 +48,7 @@ app.post('/interactions', verifyKeyMiddleware(PUBLIC_KEY), async (req, res) => {
 app.get('/register_commands', async (req,res) =>{
   let slash_commands = [];
   for(let [key, value] of replies) {
-	  slash_commands.add(
+	  slash_commands.push(
 		{
 		  "name": key,
 		  "description": value,
