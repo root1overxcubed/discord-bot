@@ -6,7 +6,6 @@ const GUILD_ID = process.env.GUILD_ID
 
 // Discord.js bot
 const {Intents, MessageEmbed} = require('discord.js');
-const pg = require('pg');
 const {CumBot} = require('./cumbot.js');
 const {reply} = require('./commands.js');
 const commands = require('./help');

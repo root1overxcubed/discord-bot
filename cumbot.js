@@ -1,5 +1,4 @@
 const {Client, MessageAttachment, MessageOptions} = require('discord.js');
-const pg = require('pg');
 const fs = require('fs');
 const path = require('path');
 
