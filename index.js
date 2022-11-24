@@ -5,73 +5,71 @@ const TOKEN = process.env.TOKEN
 const PUBLIC_KEY = process.env.PUBLIC_KEY || 'not set'
 const GUILD_ID = process.env.GUILD_ID 
 
-// Discord.js bot
-const {Intents, MessageEmbed} = require('discord.js');
-const {CumBot} = require('./cumbot.js');
-const {reply} = require('./commands.js');
-const commands = require('./help');
-
+const axios = require('axios')
 const express = require('express');
+const { InteractionType, InteractionResponseType, verifyKeyMiddleware } = require('discord-interactions');
 const app = express();
 
-const bot = new CumBot({
-	intents: [Intents.FLAGS.GUILDS,
-				Intents.FLAGS.GUILD_INVITES,
-				Intents.FLAGS.GUILD_MESSAGES,
-				Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
-				Intents.FLAGS.DIRECT_MESSAGES,
-				Intents.FLAGS.DIRECT_MESSAGE_REACTIONS]
-});
-						
-bot.on('ready', () => {
-	console.log(`Logged in as ${bot.user.tag}.`);
-    bot.user.setActivity('.cum', {type: 'LISTENING'});
-});
+const replies = new Map();
+replies.set('.modabuse','Because it\'s funny!');
+replies.set('.cumabuse','Because it\'s cummy!');
+replies.set('.whyareyoucumming',{files: [`./images/commands/whyareyoucumming.png` ]});
+replies.set('.come','I\'m comming!');
+replies.set('.cum','I\'m comming!');
 
-bot.on('messageCreate', async message => {
-	if (reply(message)) return;
-
-	const channel_id = message.channel.id;
-  
-	if (message.content.startsWith('.cum')) {
-		let args = message.content.split(' ');
-
-		if (args[0] != '.cum') return;
-
-		if (args.length == 1) {
-			bot.cum(channel_id);
-			return;
-		}
-
-		let command = args[1].toLowerCase();
-		switch (command) {
-			case 'count':
-				bot.count(channel_id);
-				break;
-			case 'last':
-				bot.last(channel_id);
-				break;
-			case 'next':
-				bot.next(channel_id);
-				break;
-
-			case 'help':
-				let embed =  new MessageEmbed()
-					.setTitle('HELP MENU')
-					.setColor('GREEN')
-					.setFooter(`Requested by: ${message.member ? message.member.displayName : message.author.username}`, message.author.displayAvatarURL())
-					.setThumbnail(bot.user.displayAvatarURL());
-				embed
-					.setDescription(Object.keys(commands).map(command => `\`${command.padEnd(Object.keys(commands).reduce((a, b) => b.length > a.length ? b : a, '').length)}\` :: ${commands[command].description}`).join('\n'));
-				message.channel.send({embeds: [embed]});
-				break;
-		}
-	}
-	
-	bot.maybeRecord(message);
+const discord_api = axios.create({
+  baseURL: 'https://discord.com/api/',
+  timeout: 3000,
+  headers: {
+	"Access-Control-Allow-Origin": "*",
+	"Access-Control-Allow-Methods": "GET, POST, PUT, DELETE",
+	"Access-Control-Allow-Headers": "Authorization",
+	"Authorization": `Bot ${TOKEN}`
+  }
 });
 
-bot.login(TOKEN);
+
+app.post('/interactions', verifyKeyMiddleware(PUBLIC_KEY), async (req, res) => {
+  const interaction = req.body;
+
+  if (interaction.type === InteractionType.APPLICATION_COMMAND) {
+	let response = replies.get(interaction.data.name);
+    if(response != undefined){
+      return res.send({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: response,
+        },
+      });
+    }
+  }
+});
+
+app.get('/register_commands', async (req,res) =>{
+  let slash_commands = [];
+  for(let [key, value] of replies) {
+	  slash_commands.add(
+		{
+		  "name": key,
+		  "description": value,
+		  "options": []
+		});
+  }
+  try
+  {
+    // api docs - https://discord.com/developers/docs/interactions/application-commands#create-global-application-command
+    let discord_response = await discord_api.put(
+      `/applications/${APPLICATION_ID}/guilds/${GUILD_ID}/commands`,
+      slash_commands
+    )
+    console.log(discord_response.data)
+    return res.send('commands have been registered')
+  }catch(e){
+    console.error(e.code)
+    console.error(e.response?.data)
+    return res.send(`${e.code} error from discord`)
+  }
+})
 
 app.get('/', async (req,res) =>{
   return res.send('Follow documentation ')
