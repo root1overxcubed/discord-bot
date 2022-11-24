@@ -11,11 +11,10 @@ const { InteractionType, InteractionResponseType, verifyKeyMiddleware } = requir
 const app = express();
 
 const replies = new Map();
-replies.set('.modabuse','Because it\'s funny!');
-replies.set('.cumabuse','Because it\'s cummy!');
-replies.set('.whyareyoucumming',{files: [`./images/commands/whyareyoucumming.png` ]});
-replies.set('.come','I\'m comming!');
-replies.set('.cum','I\'m comming!');
+replies.set('modabuse','Because it\'s funny!');
+replies.set('cumabuse','Because it\'s cummy!');
+replies.set('come','I\'m comming!');
+replies.set('cum','I\'m comming!');
 
 const discord_api = axios.create({
   baseURL: 'https://discord.com/api/',
